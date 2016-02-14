@@ -1,0 +1,1959 @@
+<html>
+<head>
+	<title>atomicGL DEBUG </title>
+	<meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
+
+	<script type="text/javascript" src="gltp1_fichiers/glMatrix-0.js"></script>
+	<script type="text/javascript" src="gltp1_fichiers/webgl-utils.js"></script>
+
+	<!-- ATOMICGL ENGINE -->
+	<!-- load "objects" -->
+	<script type="text/javascript" src="objs/palais_v01_bois_parquet.js"></script>
+	<script type="text/javascript" src="objs/palais_v01_bois_poutre.js"></script>
+	<script type="text/javascript" src="objs/palais_v01_decors.js"></script>
+	<script type="text/javascript" src="objs/palais_v01_mur.js"></script>
+	<script type="text/javascript" src="objs/palais_v01_terrase.js"></script>
+	<script type="text/javascript" src="objs/palais_v01_toiture.js"></script>
+
+	<script type="text/javascript" src="objs/donjonBase.js"></script>
+	<script type="text/javascript" src="objs/donjonBois.js"></script>
+	<script type="text/javascript" src="objs/donjonFenetre.js"></script>
+	<script type="text/javascript" src="objs/donjonMur.js"></script>
+	<script type="text/javascript" src="objs/donjonSol.js"></script>
+	<script type="text/javascript" src="objs/donjonToiture.js"></script>
+
+	<script type="text/javascript" src="objs/maison1mur.js"></script>
+	<script type="text/javascript" src="objs/maison1sol.js"></script>
+	<script type="text/javascript" src="objs/maison1stone.js"></script>
+	<script type="text/javascript" src="objs/maison1stone2.js"></script>
+	<script type="text/javascript" src="objs/maison1toit.js"></script>
+	<script type="text/javascript" src="objs/maison1wood.js"></script>
+
+	<script type="text/javascript" src="objs/maison3.js"></script>
+	<script type="text/javascript" src="objs/maison3roof.js"></script>
+	<script type="text/javascript" src="objs/maison3wood.js"></script>
+
+	<script type="text/javascript" src="objs/sol_herbe.js"></script>
+	<script type="text/javascript" src="objs/sol_route.js"></script>
+	<script type="text/javascript" src="objs/sol_muret.js"></script>
+	<script type="text/javascript" src="objs/sol_sable.js"></script>
+
+	<script type="text/javascript" src="objs/pont_dessus.js"></script>
+	<script type="text/javascript" src="objs/pont_pierre.js"></script>
+
+	<script type="text/javascript" src="objs/tour1base.js"></script>
+	<script type="text/javascript" src="objs/tour1mur.js"></script>
+	<script type="text/javascript" src="objs/tour1parape.js"></script>
+	<script type="text/javascript" src="objs/tour1sol.js"></script>
+	<script type="text/javascript" src="objs/tour1toit.js"></script>
+
+	<script type="text/javascript" src="objs/mur2base.js"></script>
+	<script type="text/javascript" src="objs/mur2pierre.js"></script>
+	<script type="text/javascript" src="objs/mur2bois.js"></script>
+	<script type="text/javascript" src="objs/mur2toit.js"></script>
+
+	<script type="text/javascript" src="objs/riviere.js"></script>
+
+	<!-- load "modules" -->
+	<script type="text/javascript" src="atomicGLContext.js"></script>
+	<script type="text/javascript" src="atomicGLMatrixStack.js"></script>
+	<script type="text/javascript" src="atomicGLSceneGraph.js"></script>
+	<script type="text/javascript" src="atomicGLTexture.js"></script>
+
+	<script type="text/javascript" src="atomicGLClock.js"></script>
+	<script type="text/javascript" src="atomicGLWalkCamera.js"></script>
+
+	<script type="text/javascript" src="atomicGLShader.js"></script>
+	<script type="text/javascript" src="atomicGLWaterShader.js"></script>
+
+	<script type="text/javascript" src="atomicGLObj.js"></script>
+	<script type="text/javascript" src="atomicGLCube.js"></script>
+	<script type="text/javascript" src="atomicGLSkyBox.js"></script>
+	<script type="text/javascript" src="atomicGLxyPlane.js"></script>
+	<script type="text/javascript" src="atomicGLxzPlane.js"></script>
+	<script type="text/javascript" src="atomicGLSphere.js"></script>
+	<script type="text/javascript" src="atomicGLCylinder.js"></script>
+
+	<!-- SHADER: vertex color -->
+	<!-- display the color of the  object -->
+	<script id="vertex_vertex-color" type="x-shader/x-vertex">
+	// vertex shader
+	// ------------------------------------------------------
+	// vertex color
+	// ------------------------------------------------------
+
+	// attributes inputs
+	attribute vec3 aVertexPosition;
+	attribute vec3 aVertexNormal;
+	attribute vec3 aVertexColor;
+
+	// uniform matrices
+	uniform mat4 uMVMatrix;
+	uniform mat4 uPMatrix;
+	uniform mat3 uNMatrix;
+
+	// uniform ambiant color
+	uniform vec3 uAmbientColor;
+
+	// output (to fragment shader)
+	varying vec3 vcolor;
+
+	void main(void) {
+		// model -> view
+		vec4 mvPosition = uMVMatrix * vec4(aVertexPosition, 1.0);
+		gl_Position = uPMatrix * mvPosition;
+
+		// vcolor
+		vcolor = uAmbientColor+aVertexColor;
+	}
+</script>
+	<script id="frag_vertex-color" type="x-shader/x-fragment">
+	#ifdef GL_ES
+		precision highp float;
+	#endif
+
+	// fragment shader
+	// ------------------------------------------------------
+	// vertex color
+	// ------------------------------------------------------
+
+	// varying input
+	varying vec3 vcolor;
+
+	// main
+	void main(void) { gl_FragColor = vec4(vcolor, 1.0);}
+
+</script>
+
+	<!-- SHADER: diffus per fragment -->
+	<!-- diffuse shader -->
+	<script id="vertex_diffuse" type="x-shader/x-vertex">
+	// vertex shader
+	// ------------------------------------------------------
+	// diffuse shader
+	// per fragment
+	// lights nb: 1
+	// ------------------------------------------------------
+
+	// attributes inputs  (vertex arrays)
+		attribute vec3 aVertexPosition;
+		attribute vec3 aVertexNormal;
+		attribute vec3 aVertexColor;
+
+	// uniform matrices
+		uniform mat4 uMVMatrix;
+		uniform mat4 uPMatrix;
+		uniform mat3 uNMatrix;
+
+	// output (to fragment shader)
+		varying vec4 vPosition;
+		varying vec3 vNormal;
+		varying vec3 vcolor;
+
+	void main(void) {
+		// model -> view
+		vPosition = uMVMatrix * vec4(aVertexPosition, 1.0);
+		gl_Position = uPMatrix * vPosition;
+		// vNormal
+		vNormal = uNMatrix * aVertexNormal;
+		// vcolor
+		vcolor = aVertexColor;
+	}
+</script>
+	<script id="frag_diffuse" type="x-shader/x-fragment">
+	#ifdef GL_ES
+		precision highp float;
+	#endif
+
+	// fragment shader
+	// ------------------------------------------------------
+	// diffuse shader
+	// per fragment
+	// lights nb: 1
+	// ------------------------------------------------------
+
+	// varying input (output of the vertex shader)
+		varying vec4 vPosition;
+		varying vec3 vNormal;
+		varying vec3 vcolor;
+
+	// lights
+		// ambient
+		uniform vec3 uAmbientColor;
+
+		//point light ie omni dir:  location, color
+		uniform vec3 uPointLightPosition0;
+		uniform vec3 uPointLightColor0;
+
+	// local constant
+		// Kd: diffuse coeff
+		float Kd = 1.0 ;
+
+	// main
+    void main(void) {
+		// light direction
+		vec3 lightDirection = normalize(uPointLightPosition0 - vPosition.xyz);
+		// eye direction
+		vec3 eyeDirection = normalize(-vPosition.xyz);
+
+		// normalize normal
+		vec3 normal = normalize(vNormal);
+		//  diffuse term
+		float diffuseLightWeight = max(dot(normal, lightDirection), 0.0);
+
+		// light color
+         vec3 lightColor = uAmbientColor + Kd*diffuseLightWeight*uPointLightColor0 *vcolor  ;
+
+        gl_FragColor = vec4(lightColor,1.0);
+    }
+</script>
+
+	<!-- SHADER: phong per fragment -->
+	<!-- phong shader -->
+	<script id="vertex_phong" type="x-shader/x-vertex">
+	// vertex shader
+	// ------------------------------------------------------
+	// phong shader
+	// per fragment
+	// lights nb: 1
+	// ------------------------------------------------------
+
+	// attributes inputs  (vertex arrays)
+		attribute vec3 aVertexPosition;
+		attribute vec3 aVertexNormal;
+		attribute vec3 aVertexColor;
+
+	// uniform matrices
+		uniform mat4 uMVMatrix;
+		uniform mat4 uPMatrix;
+		uniform mat3 uNMatrix;
+
+	// output (to fragment shader)
+		varying vec4 vPosition;
+		varying vec3 vNormal;
+		varying vec3 vcolor;
+
+	void main(void) {
+		// model -> view
+		vPosition = uMVMatrix * vec4(aVertexPosition, 1.0);
+		gl_Position = uPMatrix * vPosition;
+		// vNormal
+		vNormal = uNMatrix * aVertexNormal;
+		// vcolor
+		vcolor = aVertexColor;
+	}
+	</script>
+	<script id="frag_phong" type="x-shader/x-fragment">
+	#ifdef GL_ES
+		precision highp float;
+	#endif
+
+	// fragment shader
+	// ------------------------------------------------------
+	// phong shader
+	// per fragment
+	// lights nb: 1
+	// ------------------------------------------------------
+
+	// varying input (output of the vertex shader)
+		varying vec4 vPosition;
+		varying vec3 vNormal;
+		varying vec3 vcolor;
+
+	// lights
+		// ambient
+		uniform vec3 uAmbientColor;
+
+		//point light ie omni dir:  location, color
+		uniform vec3 uPointLightPosition0;
+		uniform vec3 uPointLightColor0;
+
+	// local constant
+		// Kd: diffuse coeff
+		float Kd = 0.5 ;
+		float Ks = 0.5 ;
+		float sh = 8.0 ;
+		// specular color
+		vec3 specColor = vec3(1.0,1.0,1.0);
+
+	// main
+    void main(void) {
+		// light direction
+		vec3 lightDirection = normalize(uPointLightPosition0 - vPosition.xyz);
+
+		// eye direction
+		vec3 eyeDirection = normalize(-vPosition.xyz);
+
+		// normalize normal
+		vec3 normal = normalize(vNormal);
+
+		// reflection direction
+		vec3 reflectDirection = normalize(reflect(-lightDirection,normal));
+
+		//  diffuse term
+		float diffuseLightWeight = max(dot(normal, lightDirection), 0.0);
+
+		// specular term
+		float specularLightWeight = pow(max(dot(reflectDirection,eyeDirection),0.0),sh);
+
+		// light color
+         vec3 lightColor = uAmbientColor + Kd*diffuseLightWeight*uPointLightColor0 *vcolor + Ks*specularLightWeight*uPointLightColor0*specColor ;
+
+        gl_FragColor = vec4(lightColor,1.0);
+    }
+	</script>
+
+	<!-- SHADER: cartoon per fragment -->
+	<!-- cartoon shader -->
+	<script id="vertex_cartoon" type="x-shader/x-vertex">
+	// vertex shader
+	// ------------------------------------------------------
+	// cartoon shader
+	// per fragment
+	// lights nb: 1
+	// ------------------------------------------------------
+
+	// attributes inputs  (vertex arrays)
+		attribute vec3 aVertexPosition;
+		attribute vec3 aVertexNormal;
+		attribute vec3 aVertexColor;
+
+	// uniform matrices
+		uniform mat4 uMVMatrix;
+		uniform mat4 uPMatrix;
+		uniform mat3 uNMatrix;
+
+	// output (to fragment shader)
+		varying vec4 vPosition;
+		varying vec3 vNormal;
+		varying vec3 vcolor;
+
+	void main(void) {
+		// model -> view
+		vPosition = uMVMatrix * vec4(aVertexPosition, 1.0);
+		gl_Position = uPMatrix * vPosition;
+		// vNormal
+		vNormal = uNMatrix * aVertexNormal;
+		// vcolor
+		vcolor = aVertexColor;
+	}
+	</script>
+	<script id="frag_cartoon" type="x-shader/x-fragment">
+	#ifdef GL_ES
+		precision highp float;
+	#endif
+
+	// fragment shader
+	// ------------------------------------------------------
+	// cartoon shader
+	// per fragment
+	// lights nb: 1
+	// ------------------------------------------------------
+
+	// varying input (output of the vertex shader)
+		varying vec4 vPosition;
+		varying vec3 vNormal;
+		varying vec3 vcolor;
+
+	// lights
+		// ambient
+		uniform vec3 uAmbientColor;
+
+		//point light ie omni dir:  location, color
+		uniform vec3 uPointLightPosition0;
+		uniform vec3 uPointLightColor0;
+
+	// local constant - could be uniform
+		// edge color
+		vec3 edgeColor = vec3(0.0,0.0,0.0);
+		// shadow color
+		vec3 shadowColor = vec3(0.0, 0.0, 0.5);
+		// midtoneColor
+		vec3 midtoneColor = vec3(0.0,0.0,1.0);
+		// highlight color
+		vec3 highLightColor = vec3(1.0,1.0, 1.0);
+		// diffuse scpecular shininess
+		float Kd = 0.5 ;
+		float Ks = 0.5 ;
+		float sh = 8.0 ;
+		// thresholds
+		float shadowMidtone = 0.0;
+		float midToneHighLight = 0.75 ;
+		float edgeThreshold = 0.95 ;
+
+	// main
+    void main(void) {
+		// light direction
+		vec3 lightDirection = normalize(uPointLightPosition0 - vPosition.xyz);
+
+		// eye direction
+		vec3 eyeDirection = normalize(-vPosition.xyz);
+
+		// normalize normal
+		vec3 normal = normalize(vNormal);
+
+		// reflection direction
+		vec3 reflectDirection = normalize(reflect(-lightDirection,normal));
+
+		//  diffuse term
+		float diffuse = max(dot(normal, lightDirection), 0.0);
+
+		// specular term
+		float specular = pow(max(dot(reflectDirection,eyeDirection),0.0),sh);
+
+		// light
+		float light = Kd*diffuse + Ks*specular;
+
+		// edge term
+		float edge = sqrt(1.0 - pow(max(dot(normal,eyeDirection),0.0),2.0));
+
+		// color
+         vec3 final = vec3(1.0,0.0,0.0);
+         if (edge > edgeThreshold)
+         	{ final = edgeColor;}
+         else if (light <= shadowMidtone)
+         	{ final = shadowColor;}
+         else if (light <= midToneHighLight)
+         	{ final = midtoneColor;}
+         else
+         	{ final = highLightColor;}
+
+        gl_FragColor = vec4(final,1.0);
+    }
+	</script>
+
+	<!-- SHADER: texture per fragment -->
+	<!-- texture shader -->
+	<script id="vertex_texture" type="x-shader/x-vertex">
+	// vertex shader
+	// ------------------------------------------------------
+	// texture shader per fragment
+	// ------------------------------------------------------
+
+	// attributes inputs  (vertex arrays)
+		attribute vec3 aVertexPosition;
+		attribute vec3 aVertexNormal ;
+		attribute vec2 aVertexTexCoord;
+
+	// uniform matrices
+		uniform mat4 uMVMatrix;
+		uniform mat4 uPMatrix;
+		uniform mat3 uNMatrix;
+
+	// output
+    	varying vec2 vTextureCoord;
+		varying vec4 vPosition;
+		varying vec3 vNormal;
+
+    void main(void) {
+		// model -> view
+		vPosition = uMVMatrix * vec4(aVertexPosition, 1.0);
+		gl_Position = uPMatrix * vPosition;
+		// vNormal
+		vNormal = uNMatrix * aVertexNormal;
+		// texCoord
+        vTextureCoord = aVertexTexCoord;
+    }
+	</script>
+	<script id="frag_texture" type="x-shader/x-fragment">
+	#ifdef GL_ES
+		precision highp float;
+	#endif
+	// fragment shader
+	// ------------------------------------------------------
+	// texture shader per fragment
+	// ------------------------------------------------------
+
+    varying vec2 vTextureCoord;
+    uniform sampler2D uSampler0;
+
+    void main(void) {
+        gl_FragColor = texture2D(uSampler0, vec2(vTextureCoord.s, vTextureCoord.t));
+    }
+	</script>
+
+
+	<!-- SHADER: textureDiff -->
+	<!-- texture diffus shader -->
+	<script id="vertex_texDiff" type="x-shader/x-vertex">
+	// vertex shader
+	// ------------------------------------------------------
+	// texture shader per fragment
+	// ------------------------------------------------------
+	// lights nb: 1
+	// ------------------------------------------------------
+
+	// attributes inputs  (vertex arrays)
+		attribute vec3 aVertexPosition;
+		attribute vec2 aVertexTexCoord;
+		attribute vec3 aVertexNormal;
+
+	// uniform matrices
+		uniform mat4 uMVMatrix;
+		uniform mat4 uPMatrix;
+		uniform mat3 uNMatrix;
+
+	// output
+    	varying vec2 vTextureCoord;
+		varying vec4 vPosition;
+		varying vec3 vNormal;
+
+    void main(void) {
+    	// vNormal
+		vNormal = uNMatrix * aVertexNormal;
+
+        gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
+        vTextureCoord = aVertexTexCoord;
+    }
+	</script>
+	<script id="frag_texDiff" type="x-shader/x-fragment">
+	#ifdef GL_ES
+		precision highp float;
+	#endif
+	// fragment shader
+	// ------------------------------------------------------
+	// texture shader per fragment
+	// ------------------------------------------------------
+	// lights nb: 1
+	// ------------------------------------------------------
+
+	// local constant
+		// Kd: diffuse coeff
+		float Kd = 1.0 ;
+
+	// inputs
+    	varying vec2 vTextureCoord;
+		varying vec4 vPosition;
+		varying vec3 vNormal;
+
+    // Uniform
+    	uniform sampler2D uSampler0;
+
+		// lights
+		// ambient
+		uniform vec3 uAmbientColor;
+
+		//point light ie omni dir:  location, color
+		uniform vec3 uPointLightPosition0;
+		uniform vec3 uPointLightColor0;
+
+
+    void main(void) {
+    	// light direction
+		vec3 lightDirection = normalize(uPointLightPosition0 - vPosition.xyz);
+		// eye direction
+		vec3 eyeDirection = normalize(-vPosition.xyz);
+
+		// normalize normal
+		vec3 normal = normalize(vNormal);
+
+		//  diffuse term
+		float diffuseLightWeight = max(dot(normal, lightDirection), 0.0);
+
+		// texture color
+		vec4 texColor  = texture2D(uSampler0, vec2(vTextureCoord.s, vTextureCoord.t));
+
+		// light color
+		vec3 lightColor = Kd*uAmbientColor*texColor.rgb + Kd*diffuseLightWeight*uPointLightColor0 *texColor.rgb ;
+
+
+
+        gl_FragColor = vec4(lightColor,1.0);
+    }
+	</script>
+
+	<!-- SHADER: texture Diffus & normal map -->
+	<!-- texture diffus and normal mapshader -->
+	<script id="vertex_texDiffNormalMap" type="x-shader/x-vertex">
+	// vertex shader
+	// ------------------------------------------------------
+	// texture shader per fragment
+	// ------------------------------------------------------
+	// lights nb: 1
+	// ------------------------------------------------------
+
+	// attributes inputs  (vertex arrays)
+		attribute vec3 aVertexPosition;
+		attribute vec2 aVertexTexCoord;
+		attribute vec3 aVertexNormal;
+
+	// uniform matrices
+		uniform mat4 uMVMatrix;
+		uniform mat4 uPMatrix;
+		uniform mat3 uNMatrix;
+
+	// output
+    	varying vec2 vTextureCoord;
+		varying vec4 vPosition;
+		varying vec3 vNormal;
+
+    void main(void) {
+    	// vNormal
+		vNormal = uNMatrix * aVertexNormal;
+
+        gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
+        vTextureCoord = aVertexTexCoord;
+    }
+	</script>
+	<script id="frag_texDiffNormalMap" type="x-shader/x-fragment">
+	#ifdef GL_ES
+		precision highp float;
+	#endif
+	// fragment shader
+	// ------------------------------------------------------
+	// texture shader per fragment
+	// ------------------------------------------------------
+	// lights nb: 1
+	// ------------------------------------------------------
+
+	// local constant
+		// Kd: diffuse coeff
+		float Kd = 1.0 ;
+
+	// inputs
+    	varying vec2 vTextureCoord;
+		varying vec4 vPosition;
+		varying vec3 vNormal;
+
+    // Uniform
+    	uniform sampler2D uSampler0;
+    	uniform sampler2D uSampler1;
+
+		// lights
+		// ambient
+		uniform vec3 uAmbientColor;
+
+		//point light ie omni dir:  location, color
+		uniform vec3 uPointLightPosition0;
+		uniform vec3 uPointLightColor0;
+
+
+    void main(void) {
+    	// light direction
+		vec3 lightDirection = normalize(uPointLightPosition0 - vPosition.xyz);
+		// eye direction
+		vec3 eyeDirection = normalize(-vPosition.xyz);
+
+		// normalize normal
+		vec3 oldNormal = normalize(vNormal);
+		// new normal in tangent space
+		vec3 newNormalTS = normalize(2.0*texture2D(uSampler1, vTextureCoord).xyz -1.0) ;
+		//newNormalTS.z = newNormalTS.z*1000.0;
+		// newNormalTS = normalize(newNormalTS);
+		// TS to View
+		vec3 biTangent = cross(oldNormal,vec3(0.0,0.0,1.0));
+		// test tangent
+		if (dot(biTangent,biTangent) == 0.0){biTangent = cross(oldNormal,vec3(0.0,1.0,0.0));}
+		vec3 tangent =  cross(biTangent,oldNormal);
+		// no transpose
+		vec3 u1 = tangent ;
+		vec3 u2 = biTangent;
+		vec3 u3 = oldNormal;
+		// TS to view matrix
+		mat3 TBN = mat3(u1,u2,u3);
+		// transform normal
+		vec3 normal = TBN*newNormalTS ;
+		//  diffuse term
+		float diffuseLightWeight = max(dot(normal, lightDirection), 0.0);
+
+		// texture color
+		vec4 texColor  = texture2D(uSampler0, vec2(vTextureCoord.s, vTextureCoord.t));
+
+		// light color
+		vec3 lightColor = Kd*uAmbientColor*texColor.rgb + Kd*diffuseLightWeight*uPointLightColor0 *texColor.rgb ;
+
+
+    gl_FragColor = vec4(lightColor,1.0);
+    }
+	</script>
+
+	<script id="frag_texPhongNormalMap" type="x-shader/x-fragment">
+	#ifdef GL_ES
+		precision highp float;
+	#endif
+	// fragment shader
+	// ------------------------------------------------------
+	// texture shader per fragment
+	// ------------------------------------------------------
+	// lights nb: 1
+	// ------------------------------------------------------
+
+	// local constant
+		// Kd: diffuse coeff
+		float Kd = 1.0 ;
+		float Ks = 0.8 ;
+		float sh = 5.0 ;
+		// specular color
+		vec3 specColor = vec3(1.0,1.0,1.0);
+
+		// thresholds
+		float shadowMidtone = 0.0;
+		float midToneHighLight = 0.8 ;
+		float edgeThreshold = 0.98 ;
+
+		// local constant - could be uniform
+			// edge color
+			vec3 edgeColor = vec3(0.0,0.0,0.0);
+			// shadow color
+			vec3 shadowColor = vec3(0.5, 0.5, 0.5);
+			// midtoneColor
+			vec3 midtoneColor = vec3(0.8,0.8,0.8);
+			// highlight color
+			vec3 highLightColor = vec3(1.0,1.0, 1.0);
+
+	// inputs
+    varying vec2 vTextureCoord;
+		varying vec4 vPosition;
+		varying vec3 vNormal;
+
+    // Uniform
+    	uniform sampler2D uSampler0;
+    	uniform sampler2D uSampler1;
+
+		// lights
+		// ambient
+		uniform vec3 uAmbientColor;
+
+		//point light ie omni dir:  location, color
+		uniform vec3 uPointLightPosition0;
+		uniform vec3 uPointLightColor0;
+
+    void main(void) {
+    	// light direction
+		vec3 lightDirection = normalize(uPointLightPosition0 - vPosition.xyz);
+		// eye direction
+		vec3 eyeDirection = normalize(-vPosition.xyz);
+
+		// normalize normal
+		vec3 oldNormal = normalize(vNormal);
+		// new normal in tangent space
+		vec3 newNormalTS = normalize(2.0*texture2D(uSampler1, vTextureCoord).xyz -1.0) ;
+		//newNormalTS.z = newNormalTS.z*1000.0;
+		// newNormalTS = normalize(newNormalTS);
+		// TS to View
+		vec3 biTangent = cross(oldNormal,vec3(0.0,0.0,1.0));
+		// test tangent
+		if (dot(biTangent,biTangent) == 0.0){biTangent = cross(oldNormal,vec3(0.0,1.0,0.0));}
+		vec3 tangent =  cross(biTangent,oldNormal);
+		// no transpose
+		vec3 u1 = tangent ;
+		vec3 u2 = biTangent;
+		vec3 u3 = oldNormal;
+		// TS to view matrix
+		mat3 TBN = mat3(u1,u2,u3);
+		// transform normal
+		vec3 normal = TBN*newNormalTS ;
+		//  diffuse term
+
+		// reflection direction
+		vec3 reflectDirection = normalize(reflect(-lightDirection,normal));
+
+		float diffuseLightWeight = max(dot(normal, lightDirection), 0.0);
+
+		// specular term
+		float specularLightWeight = pow(max(dot(reflectDirection,eyeDirection),0.0),sh);
+
+		// texture color
+		vec4 texColor  = texture2D(uSampler0, vec2(vTextureCoord.s, vTextureCoord.t));
+
+		// light
+		float light = Kd*diffuseLightWeight + Ks*specularLightWeight;
+		//vec3 lightColor = Kd*uAmbientColor*texColor.rgb + Kd*diffuseLightWeight*uPointLightColor0 *texColor.rgb + Ks*specularLightWeight*uPointLightColor0*specColor;
+		vec3 lightColor = Kd*uAmbientColor*texColor.rgb + Kd*diffuseLightWeight*uPointLightColor0 *texColor.rgb;
+
+		// edge term
+		float edge = sqrt(1.0 - pow(max(dot(normal,eyeDirection),0.0),2.0));
+
+		// color
+				 vec3 final = vec3(1.0,0.0,0.0);
+				 if (edge > edgeThreshold)
+					{ final = edgeColor;}
+				 if (light <= shadowMidtone)
+					{ final = shadowColor;}
+				 else if (light <= midToneHighLight)
+					{ final = midtoneColor;}
+				 else
+					{ final = highLightColor;}
+
+		// light color
+		lightColor = lightColor * final;
+
+    gl_FragColor = vec4(lightColor,1.0);
+    }
+	</script>
+
+	<script id="frag_texDiffDisplaceMap" type="x-shader/x-fragment">
+	#ifdef GL_ES
+		precision highp float;
+	#endif
+	// fragment shader
+	// ------------------------------------------------------
+	// texture shader per fragment
+	// ------------------------------------------------------
+	// lights nb: 1
+	// ------------------------------------------------------
+	// Normalize the offset vector in texture space.
+
+	// local constant
+		// Kd: diffuse coeff
+		float Kd = 1.0 ;
+
+	// inputs
+  	varying vec2 vTextureCoord;
+		varying vec4 vPosition;
+		varying vec3 vNormal;
+
+
+    // Uniform
+    uniform sampler2D uSampler0;
+    uniform sampler2D uSampler1;
+
+		// lights
+		// ambient
+		uniform vec3 uAmbientColor;
+
+		//point light ie omni dir:  location, color
+		uniform vec3 uPointLightPosition0;
+		uniform vec3 uPointLightColor0;
+
+	void main(void) {
+
+			// light direction
+		vec3 lightDirection = normalize(uPointLightPosition0 - vPosition.xyz);
+		// eye direction
+		vec3 eyeDirection = normalize(-vPosition.xyz);
+		vec3 normal = normalize(vNormal);
+
+		vec3 oldNormal = normalize(vNormal);
+		vec3 biTangent = cross(oldNormal,vec3(0.0,0.0,1.0));
+		vec3 tangent =  cross(biTangent,oldNormal);
+
+		  // Transform the eye vector into tangent space.
+		  // Adjust the slope in tangent space based on bump depth
+
+		  vec3 eyeVec = eyeDirection - vPosition.xyz;
+		  vec3 tanEyeVec;
+		  tanEyeVec.x = dot(tangent, eyeDirection);
+		  tanEyeVec.y = dot(oldNormal, eyeDirection);
+		  tanEyeVec.z = -1.0 * dot(vNormal, eyeDirection);
+		  vec3 uTanEyeVec = tanEyeVec;
+
+		  // Transform the light vector into tangent space.
+		  // We will use this later for tangent-space normal mapping
+
+		  vec3 lightVec = lightDirection - vPosition.xyz;
+		  vec3 tanLightVec;
+		  tanLightVec.x = dot(tangent, lightDirection);
+		  tanLightVec.y = dot(oldNormal, lightDirection);
+		  tanLightVec.z = dot(vNormal, lightDirection);
+		  vec3 uTanLightVec = tanLightVec;
+
+	 // The normalization factor ensures we are normalized with respect
+   // to a distance which is defined in terms of pixels.
+   vec3 offset = normalize(uTanEyeVec);
+	 // Normalisation Factor
+	 offset = offset*5.0;
+
+   vec3 texCoord = vec3(vTextureCoord, 1);
+
+	 vec2 distance = vec2(0.0, 0.0);
+
+   // March a ray
+   for (int i = 0; i < 100; i++) {
+     distance.y = dot(vPosition.xyz, texCoord);
+     texCoord = texCoord + vec3(distance, 1.0) * offset;
+   }
+   // Compute derivatives of unperturbed texcoords.
+   // This is because the offset texcoords will have discontinuities
+
+   // which lead to incorrect filtering.
+   vec2 dx = texCoord.xy;
+   vec2 dy = texCoord.xy;
+
+   // Do bump-mapped lighting in tangent space.
+   // 'normalTex' stores tangent-space normals remapped
+	 //  diffuse term
+	 float diffuseLightWeight = max(dot(normal, lightDirection), 0.0);
+	 // texture color
+	 vec4 texColor  = texture2D(uSampler0, vec2(vTextureCoord.s, vTextureCoord.t));
+
+   // into the range [0, 1].
+   //vec4 tanNormal = 2 * vec4(vNormal, texCoord.xy, dx, dy) - 1;
+
+	 tanLightVec = normalize(uPointLightPosition0);
+   float diffuse = dot(tangent, tanLightVec);
+
+	 vec4 unknow = vec4(uPointLightColor0.xy, texCoord.xy);
+   // Multiply diffuse lighting by texture color
+   vec3 lightColor = Kd*uAmbientColor*texColor.rgb + Kd*diffuseLightWeight*uPointLightColor0 *texColor.rgb + diffuse * unknow.xyz;
+
+   gl_FragColor = vec4(lightColor,1.0);
+	 }
+</script>
+
+	<!-- SHADER: wave vertex -->
+	<!-- wave shader -->
+	<script id="vertex_wave" type="x-shader/x-vertex">
+	// vertex shader
+	// ------------------------------------------------------
+	// wave vertex shader
+	// sum of 4 sin waves
+	// ------------------------------------------------------
+
+	// attributes inputs  (vertex arrays)
+		attribute vec3 aVertexPosition;
+		attribute vec3 aVertexNormal;
+		attribute vec2 aVertexTexCoord;
+
+	// uniform waves
+	// A sin(w*u + p*t)
+	// [0]: A amplitude
+	// [1]: w omega
+	// [2]: p phi
+		uniform vec3 uA0 ;
+		uniform vec3 uA1 ;
+		uniform vec3 uA2 ;
+		uniform vec3 uA3 ;
+
+	// uniform
+		uniform vec2 uXrange;
+
+	// uniform time
+		uniform float utime ;
+
+	// uniform matrices
+		uniform mat4 uMVMatrix;
+		uniform mat4 uPMatrix;
+		uniform mat3 uNMatrix;
+
+	// output (to fragment shader)
+		varying vec4 vPosition;
+		varying vec3 vNormal;
+		varying vec3 vcolor;
+
+	// output texture
+		varying vec2 vTextureCoord;
+
+	void main(void) {
+		float u = (aVertexPosition.x - uXrange.x)/(uXrange.y -uXrange.x)*6.28 ;
+		float wupt0 = uA0.y*u+uA0.z*utime ;
+		float wupt1 = uA1.y*u+uA1.z*utime ;
+		float wupt2 = uA2.y*u+uA2.z*utime ;
+		float wupt3 = uA3.y*u+uA3.z*utime ;
+		// Asin
+		float Asin0 = uA0.x*sin(wupt0);
+		float Asin1 = uA1.x*sin(wupt1);
+		float Asin2 = uA2.x*sin(wupt2);
+		float Asin3 = uA3.x*sin(wupt3);
+
+		float dy = Asin0 +Asin1 +Asin2 +Asin3 ;
+		// tangent
+		float tx =1.0;
+		float ty0 = uA0.x*6.28*uA0.y*cos(wupt0)/(uXrange.y -uXrange.x);
+		float ty1 = uA1.x*6.28*uA1.y*cos(wupt1)/(uXrange.y -uXrange.x);
+		float ty2 = uA2.x*6.28*uA2.y*cos(wupt2)/(uXrange.y -uXrange.x);
+		float ty3 = uA3.x*6.28*uA3.y*cos(wupt3)/(uXrange.y -uXrange.x);
+		float ty = ty0 + ty1 + ty2+ ty3;
+		float tz =0.0 ;
+		// normal
+		vec3 dnormal= normalize(vec3(-ty,tx,tz));
+		// model -> view
+		vPosition = uMVMatrix * vec4(aVertexPosition+vec3(0.0,dy,0.0), 1.0);
+		gl_Position = uPMatrix * vPosition;
+		// vNormal
+		vNormal = uNMatrix * (vec3(vNormal.x,0.0,vNormal.z)+dnormal);
+		// vTextureCoord
+		vTextureCoord = aVertexTexCoord;
+	}
+</script>
+
+<!-- SHADER: water vertex -->
+<!-- water shader -->
+<script id="vertex_water" type="x-shader/x-vertex">
+
+	// attributes inputs  (vertex arrays)
+	attribute vec3 aVertexPosition;
+	attribute vec2 aVertexTexCoord;
+	attribute vec3 aVertexNormal;
+
+	uniform mat4 uMVMatrix;
+	uniform mat4 uPMatrix;
+	uniform mat3 uNMatrix;
+
+	varying vec4 vPosition;
+	varying vec4 vProjectedPosition;
+
+	void main(void)
+	{
+		vPosition = uMVMatrix * vec4(aVertexPosition, 1.0);
+		vProjectedPosition =  uPMatrix * vPosition;
+
+		gl_Position = vProjectedPosition;
+	}
+</script>
+
+<script id="frag_water" type="x-shader/x-fragment">
+	#ifdef GL_ES
+		precision highp float;
+	#endif
+
+	//point light ie omni dir:  location, color
+	uniform vec3 uDirLightDirection;
+	uniform vec3 uDirLightColor;
+
+	uniform float utime;
+	uniform sampler2D uSampler0;
+
+	varying vec4 vPosition;
+	varying vec4 vProjectedPosition;
+
+
+	vec4 getNoise(vec2 uv)
+	{
+			vec2 uv0 = (uv/103.0)+vec2(utime/17.0, utime/29.0);
+			vec2 uv1 = uv/107.0-vec2(utime/-19.0, utime/31.0);
+			vec2 uv2 = uv/vec2(897.0, 983.0)+vec2(utime/101.0, utime/97.0);
+			vec2 uv3 = uv/vec2(991.0, 877.0)-vec2(utime/109.0, utime/-113.0);
+			vec4 noise = (texture2D(uSampler0, uv0)) +
+									 (texture2D(uSampler0, uv1)) +
+									 (texture2D(uSampler0, uv2)) +
+									 (texture2D(uSampler0, uv3));
+			return noise*0.5-1.0;
+	}
+
+	void sunLight(const vec3 surfaceNormal, const vec3 eyeDirection, float shiny, float spec, float diffuse,
+								inout vec3 diffuseColor, inout vec3 specularColor)
+	{
+			vec3 reflection = normalize(reflect(-uDirLightDirection, surfaceNormal));
+			float direction = max(0.0, dot(eyeDirection, reflection));
+			specularColor += pow(direction, shiny)*uDirLightColor*spec;
+			diffuseColor += max(dot(uDirLightDirection, surfaceNormal),0.0)*uDirLightColor*diffuse;
+	}
+
+	void main(void)
+	{
+			vec4 noise = getNoise(vPosition.xz);
+			vec3 surfaceNormal = normalize(noise.xzy*vec3(2.0, 1.0, 2.0));
+
+			vec3 diffuse = vec3(0.0);
+			vec3 specular = vec3(0.0);
+
+			vec3 eyeDirection = normalize(-vPosition.xyz);
+			sunLight(surfaceNormal, eyeDirection, 100.0, 2.0, 0.5, diffuse, specular);
+
+			gl_FragColor = vec4((diffuse+specular+vec3(0.1))*vec3(0.3, 0.5, 0.9)*0.5, 1.0);
+	}
+</script>
+<!-- END -->
+
+
+
+	<!-- ATOMICGL ENGINE -->
+	<!-- create objects -->
+	<!-- wegGLStart function (required) -->
+	<script type="text/javascript">
+	//------------------------------------------------------------------------------
+	// for mouse
+	var windowHalfX = window.innerWidth / 2;
+	var windowHalfY = window.innerHeight / 2;
+	var mouseX = 0.0;
+	var mouseY = 0.0;
+	var mouseDown = false;
+	document.onmousemove = onDocumentMouseMove;
+	document.onmousedown = handleMouseDown;
+	document.onmouseup = handleMouseUp;
+
+	var currentlyPressedKeys = {};
+	//	keyboard callbacks
+	document.onkeydown = handleKeyDown;
+	document.onkeyup = handleKeyUp;
+
+	// camera
+	var cam = new atomicGLWalkCamera();
+	// OpenGL context
+	var agl = new atomicGLContext();
+	// clock
+	var sceneClock =new atomicGLClock() ;
+	// matrix stack
+	var ams =new atomicGLMatrixStack();
+	// sceneGraph
+	var sg = new atomicGLSceneGraph("root","SG_root");
+
+	// animation
+	var Yangle = 0.0;
+	var waveTime = 0.0;
+
+	// texture
+		var test, test_normal;
+		var mur_pierre1, mur_pierre1_normal;
+		var mur2, mur2_normal;
+		var mur3, mur3_normal;
+		var toit1, toit1_normal;
+		var bois1, bois1_normal;
+		var pave2, pave2_normal;
+		var pierre2, pierre2_normal;
+		var pierre3, pierre3_normal;
+		var sol3, sol3_normal;
+		var eau1, eau1_normal;
+		var marbre1, marbre1_normal;
+		var bois2, bois2_normal;
+		var sol5, sol5_normal;
+		var sol4, sol4_normal;
+		var toit2, toit2_normal;
+		var sable1, sable1_normal;
+		var herbe1, herbe1_normal;
+		var weapon1, weapon1_normal;
+		var bullet1, bullet1_normal;
+		var tonneau1, tonneau1_normal;
+
+		var skyTex ;
+
+	// scene
+	// -------------------------------------------------
+	var sky = new atomicGLSkyBox('sky',800.0);
+
+	var ground_grass = new atomicGLObj('solherbe', 		new sol_herbe(),		0.3,0.3) ;
+	var ground_road  = new atomicGLObj('solroute', 		new sol_route(),		0.1,0.1) ;
+	var ground_wall  = new atomicGLObj('solmuret', 		new sol_muret(),		1.0,1.0) ;
+	var ground_sand  = new atomicGLObj('solsable', 		new sol_sable(),		0.1,0.1) ;
+
+	var house3mur 		= new atomicGLObj('maison3', 		new maison3(),		0.5, 0.5) ;
+	var house3roof 	= new atomicGLObj('maison3roof', 	new maison3roof(),	1.0,1.0) ;
+	var house3wood 	= new atomicGLObj('maison3wood', 	new maison3wood(),	1.0,1.0) ;
+
+	var bridge1stone= new atomicGLObj('bridge1stone', 	new pont_pierre(),	0.5,0.5) ;
+	var bridge1top 	= new atomicGLObj('bridge1top', 	new pont_dessus(),	0.05,0.05) ;
+
+	var tower1base	= new atomicGLObj('tou1base', 		new tour1base(),	0.2,0.2) ;
+	var tower1mur	= new atomicGLObj('tour1mur', 		new tour1mur(),		1.0,1.0) ;
+	var tower1parape= new atomicGLObj('tour1parape', 	new tour1parape(),	1.0,1.0) ;
+	var tower1sol	= new atomicGLObj('tour1sol', 		new tour1sol(),		1.0,1.0) ;
+	var tower1toit 	= new atomicGLObj('tour1toit', 		new tour1toit(),	1.0,1.0) ;
+
+	var wall2base	= new atomicGLObj('wall1base', 		new mur2base(),		0.2,0.2) ;
+	var wall2stone = new atomicGLObj('wall2stone', 		new mur2pierre(),	0.5,0.5) ;
+	var wall2wood	= new atomicGLObj('wall2wood', 		new mur2bois(),		1.0,1.0) ;
+	var wall2roof 	= new atomicGLObj('wall2roof', 		new mur2toit(),		1.0,1.0) ;
+
+	var house1mur	= new atomicGLObj('h1mur', 			new maison1mur(),	0.1,0.1) ;
+	var house1sol 	= new atomicGLObj('h1sol', 			new maison1sol(),	1.0,1.0) ;
+	var house1stone	= new atomicGLObj('h1stone', 		new maison1stone(),	1.0,1.0) ;
+	var house1stone2= new atomicGLObj('h1stone2', 		new maison1stone2(),1.0,1.0) ;
+	var house1toit 	= new atomicGLObj('h1roof', 		new maison1toit(),	1.0,1.0) ;
+	var maison1wood = new atomicGLObj('h1wood', 		new maison1wood(),	1.0,1.0) ;
+
+	var donjon1Base		= new atomicGLObj('donjon1Base', 		new donjonBase(),	0.15,0.15) ;
+	var donjon1Bois 	= new atomicGLObj('donjon1Bois', 		new donjonBois(),	0.7,0.7) ;
+	var donjon1Fenetre	= new atomicGLObj('donjon1Fenetre', 	new donjonFenetre(),1.0,1.0) ;
+	var donjon1Mur	 	= new atomicGLObj('donjon1Mur', 		new donjonMur(),	0.5, 0.5) ;
+	var donjon1Sol 		= new atomicGLObj('donjon1Sol', 		new donjonSol(),	0.5,0.5) ;
+	var donjon1Toiture 	= new atomicGLObj('donjon1Toiture', 	new donjonToiture(),1.0,1.0) ;
+
+	var palais1		= new atomicGLObj('palais1', 		new palais_v01_bois_parquet(),	1.0,1.0) ;
+	var palais2		= new atomicGLObj('palais2', 		new palais_v01_bois_poutre(),	1.0,1.0) ;
+	var palais3		= new atomicGLObj('palais3', 		new palais_v01_decors(),		1.0,1.0) ;
+	var palais4		= new atomicGLObj('palais4', 		new palais_v01_mur(),			1.0,1.0) ;
+	var palais5		= new atomicGLObj('palais5', 		new palais_v01_terrase(),		1.0,1.0) ;
+	var palais6		= new atomicGLObj('palais6', 		new palais_v01_toiture(),		1.0,1.0) ;
+
+	var eau 		= new atomicGLxzPlane("water",1000,1000,1000,2,15.0,10.0);
+	var tonneau 	= new atomicGLCylinder("cylindre", 0.5, 1.5, 60, 60, 1.0, 1.0);
+
+	var weapon	= new atomicGLCylinder("weapon", 0.2, 1.0, 64.0, 64.0);
+	var bullets	= new atomicGLSphere("bullets", 0.1, 64.0, 64.0);
+
+	var shoot = false;
+	var nbBullet;
+	var nbBulletMax;
+
+
+	var Yangle = 0.0;
+	var waterTime = 0.0;
+
+	//webGLStart
+	function webGLStart() {
+	// init
+	// -----------------------------
+		// recover penGL canvas
+		var canvas = document.getElementById("oglcanvas");
+
+		// init OpenGL context
+		agl.initGL(canvas,[0.15,0.1,0.5]);
+
+		// light
+		//agl.pushLight([-1000.0, 1000.0, 1000.0],[1.0,0.8,0.8]); // position, color
+		agl.pushLight([+1000.0, 500.0, +500.0],[0.8,0.8,1.2]); // position, color
+		agl.pushDirectionalLight(([0,1,-1]),([2, 1.75, 1.65]));
+
+		agl.ambientLightColor = [0.1,0.05,0.0];	// color
+
+		// init Matrix Stack
+		ams.initMatrix(agl,45); // fov = 45 degrees
+
+		// texture
+		test 				=  	new atomicGLTexture("texture/test.png","color",agl);
+		test_normal 		=  	new atomicGLTexture("texture/normal.png","color",agl);
+
+		sable1 				=  	new atomicGLTexture("texture/sable1.png","color",agl);
+		sable1_normal 				=  	new atomicGLTexture("texture/sable1_normal.png","color",agl);
+
+		herbe1 				=  	new atomicGLTexture("texture/herbe1.png","color",agl);
+		herbe1_normal		=  	new atomicGLTexture("texture/herbe1_normal.png","color",agl);
+
+		mur_pierre1 		=  	new atomicGLTexture("texture/mur_pierre1.png","color",agl);
+		mur_pierre1_normal 	=  	new atomicGLTexture("texture/mur_pierre1_normal.png","color",agl);
+
+		mur2	 			=  	new atomicGLTexture("texture/mur2.png","color",agl);
+		mur2_normal 		=  	new atomicGLTexture("texture/mur2_normal.png","color",agl);
+
+		mur3 				=  	new atomicGLTexture("texture/mur3.png","color",agl);
+		mur3_normal 		=  	new atomicGLTexture("texture/mur3_normal.png","color",agl);
+
+		toit1 				=  	new atomicGLTexture("texture/toit1.png","color",agl);
+		toit1_normal		=  	new atomicGLTexture("texture/toit1_normal.png","color",agl);
+
+		bois1 				=  	new atomicGLTexture("texture/bois1.png","color",agl);
+		bois1_normal 				=  	new atomicGLTexture("texture/bois1_normal.png","color",agl);
+
+		pave2  				=  	new atomicGLTexture("texture/pave2.png","color",agl);
+		pave2_normal  		=  	new atomicGLTexture("texture/pave2_normal.png","color",agl);
+
+		pierre2 			= 	new atomicGLTexture("texture/pierre2.png","color",agl);
+		pierre2_normal 		= 	new atomicGLTexture("texture/pierre2_normal.png","color",agl);
+
+		pierre3 			= 	new atomicGLTexture("texture/pierre3.png","color",agl);
+		pierre3_normal 		= 	new atomicGLTexture("texture/pierre3_normal.png","color",agl);
+
+		sol3 				= 	new atomicGLTexture("texture/sol3.png","color",agl);
+		sol3_normal 				= 	new atomicGLTexture("texture/sol3_normal.png","color",agl);
+
+		eau1 				=	new atomicGLTexture("texture/Water2.png","color",agl);
+		eau1_normal		=	new atomicGLTexture("texture/Water4_normal.png","color",agl);
+
+		marbre1 			=	new atomicGLTexture("texture/marbre1.png","color",agl);
+		marbre1_normal 			=	new atomicGLTexture("texture/marbre1_normal.png","color",agl);
+
+		bois2 				=	new atomicGLTexture("texture/bois2.png","color",agl);
+		bois2_normal 				=	new atomicGLTexture("texture/bois2_normal.png","color",agl);
+
+		sol5 				=	new atomicGLTexture("texture/sol5.png","color",agl);
+		sol5_normal		=	new atomicGLTexture("texture/sol5_normal.png","color",agl);
+
+		sol4 				= 	new atomicGLTexture("texture/sol4.png","color",agl);
+		sol4_normal 		= 	new atomicGLTexture("texture/sol4_normal.png","color",agl);
+
+		toit2 				= 	new atomicGLTexture("texture/toit2.png","color",agl);
+		toit2_normal 		= 	new atomicGLTexture("texture/toit2_normal.png","color",agl);
+
+		weapon1 		= 	new atomicGLTexture("texture/weapon1.png","color",agl);
+		weapon1_normal 		= 	new atomicGLTexture("texture/weapon1_normal.png","color",agl);
+
+		bullet1 		= 	new atomicGLTexture("texture/marbre1.png","color",agl);
+		bullet1_normal 		= 	new atomicGLTexture("texture/marbre1_normal.png","color",agl);
+
+		tonneau1 		= new atomicGLTexture("texture/tonneau1.png", "color", agl);
+		tonneau1_normal	=	new atomicGLTexture("texture/tonneau1_normal.png", "color", agl);
+
+		skyTex 				= 	new atomicGLTexture("texture/skybox3_texture.png","color",agl);
+
+
+		// -------------------------------------------------
+		// load shaders and push shader in context
+		diffProg = new atomicGLShader("diffus", agl, "frag_diffuse", "vertex_diffuse", 0, 1);
+		diffProgId		= agl.pushProgram(diffProg);
+
+		textProg 		= new atomicGLShader("texture", agl,"frag_texture", "vertex_texture" ,1,0);
+		textProgId		= agl.pushProgram(textProg);
+
+		// -------------------------------------------------------
+		waterProg		= new atomicGLWaterShader("water", agl, "frag_water", "vertex_water", 1);
+		waterProgId 	= agl.pushProgram(waterProg);
+		// water animation
+		waterProg.wTime = 0.0 ;
+
+
+		texDiffProg 	= new atomicGLShader("diffuse-texture", agl,"frag_texDiff", "vertex_texDiff" ,1,1);
+		texDiffProgId	= agl.pushProgram(texDiffProg);
+
+		texDiffNormalMapProg 		= new atomicGLShader("normal-texture", agl,"frag_texDiffNormalMap", "vertex_texDiffNormalMap" ,2,1);
+		texDiffNormalMapProgId		= agl.pushProgram(texDiffNormalMapProg);
+
+		texPhongNormalMapProg 		= new atomicGLShader("phong-texture", agl,"frag_texPhongNormalMap", "vertex_texDiffNormalMap" ,2,1);
+		texPhongNormalMapProgId		= agl.pushProgram(texPhongNormalMapProg);
+
+		texDiffDisplaceMapProg 		= new atomicGLShader("displace-texture", agl,"frag_texDiffDisplaceMap", "vertex_texDiffNormalMap" ,2,1);
+		texDiffDisplaceMapProgId		= agl.pushProgram(texDiffDisplaceMapProg);
+
+		// -------------------------------------------------
+		sky.pushTexture(skyTex);
+		sky.initGLBuffers(agl);
+		// -------------------------------------------------
+		// environment
+		ground_grass.pushTexture(herbe1);
+		ground_grass.pushTexture(herbe1_normal);
+		ground_grass.initGLBuffers(agl);
+
+		ground_road.pushTexture(sol5);
+		ground_road.pushTexture(sol5_normal);
+		ground_road.initGLBuffers(agl);
+
+		ground_wall.pushTexture(mur_pierre1);
+		ground_wall.pushTexture(mur_pierre1_normal);
+		ground_wall.initGLBuffers(agl);
+
+		ground_sand.pushTexture(sable1);
+		ground_sand.pushTexture(sable1_normal);
+		ground_sand.initGLBuffers(agl);
+
+		// house1
+		house1mur.pushTexture(mur3);
+		house1mur.pushTexture(mur3_normal);
+		house1mur.initGLBuffers(agl);
+
+		house1sol.pushTexture(sol3);
+		house1sol.pushTexture(sol3_normal);
+		house1sol.initGLBuffers(agl);
+
+		house1stone.pushTexture(mur_pierre1);
+		house1stone.pushTexture(mur_pierre1_normal);
+		house1stone.initGLBuffers(agl);
+
+		house1stone2.pushTexture(mur2);
+		house1stone2.pushTexture(mur2_normal);
+		house1stone2.initGLBuffers(agl);
+
+		house1toit.pushTexture(toit1);
+		house1toit.pushTexture(toit1_normal);
+		house1toit.initGLBuffers(agl);
+
+		maison1wood.pushTexture(bois1);
+		maison1wood.pushTexture(bois1_normal);
+		maison1wood.initGLBuffers(agl);
+
+		// house 3: texture and init
+		house3mur.pushTexture(mur_pierre1);
+		house3mur.pushTexture(mur_pierre1_normal);
+		house3mur.initGLBuffers(agl);
+
+		house3roof.pushTexture(toit1);
+		house3roof.pushTexture(toit1_normal);
+		house3roof.initGLBuffers(agl);
+
+		house3wood.pushTexture(bois1);
+		house3wood.pushTexture(bois1_normal);
+		house3wood.initGLBuffers(agl);
+
+		// bridge
+		bridge1stone.pushTexture(mur_pierre1);
+		bridge1stone.pushTexture(mur_pierre1_normal);
+		bridge1stone.initGLBuffers(agl);
+
+		bridge1top.pushTexture(pave2);
+		bridge1top.pushTexture(pave2_normal);
+		bridge1top.initGLBuffers(agl);
+
+		// tower
+		tower1base.pushTexture(pierre3);
+		tower1base.pushTexture(pierre3_normal);
+		tower1base.initGLBuffers(agl);
+
+		tower1mur.pushTexture(mur_pierre1);
+		tower1mur.pushTexture(mur_pierre1_normal);
+		tower1mur.initGLBuffers(agl);
+
+		tower1parape.pushTexture(bois1);
+		tower1parape.pushTexture(bois1_normal);
+		tower1parape.initGLBuffers(agl);
+
+		tower1sol.pushTexture(sol3);
+		tower1sol.pushTexture(sol3_normal);
+		tower1sol.initGLBuffers(agl);
+
+		tower1toit.pushTexture(toit1);
+		tower1toit.pushTexture(toit1_normal);
+		tower1toit.initGLBuffers(agl);
+
+		// wall
+		wall2base.pushTexture(pierre3) ;
+		wall2base.pushTexture(pierre3_normal) ;
+		wall2base.initGLBuffers(agl);
+
+		wall2stone.pushTexture(mur_pierre1);
+		wall2stone.pushTexture(mur_pierre1_normal);
+		wall2stone.initGLBuffers(agl);
+
+		wall2wood.pushTexture(bois1);
+		wall2wood.pushTexture(bois1_normal);
+		wall2wood.initGLBuffers(agl);
+
+		wall2roof.pushTexture(toit1);
+		wall2roof.pushTexture(toit1_normal);
+		wall2roof.initGLBuffers(agl);
+
+		// donjon
+		donjon1Base.pushTexture(pierre3)
+		donjon1Base.pushTexture(pierre3_normal)
+		donjon1Base.initGLBuffers(agl);
+
+		donjon1Bois.pushTexture(bois1)
+		donjon1Bois.pushTexture(bois1_normal)
+		donjon1Bois.initGLBuffers(agl);
+
+		donjon1Fenetre.pushTexture(marbre1)
+		donjon1Fenetre.pushTexture(marbre1_normal)
+		donjon1Fenetre.initGLBuffers(agl);
+
+		donjon1Mur.pushTexture(mur_pierre1)
+		donjon1Mur.pushTexture(mur_pierre1_normal)
+		donjon1Mur.initGLBuffers(agl);
+
+		donjon1Sol.pushTexture(sol3)
+		donjon1Sol.pushTexture(sol3_normal)
+		donjon1Sol.initGLBuffers(agl);
+
+		donjon1Toiture.pushTexture(toit1)
+		donjon1Toiture.pushTexture(toit1_normal)
+		donjon1Toiture.initGLBuffers(agl);
+
+		// palais
+		palais1.pushTexture(bois2);
+		palais1.pushTexture(bois2_normal);
+		palais1.initGLBuffers(agl);
+
+		palais2.pushTexture(bois1);
+		palais2.pushTexture(bois1_normal);
+		palais2.initGLBuffers(agl);
+
+		palais3.pushTexture(sol5);
+		palais3.pushTexture(sol5_normal);
+		palais3.initGLBuffers(agl);
+
+		palais4.pushTexture(mur_pierre1);
+		palais4.pushTexture(mur_pierre1_normal);
+		palais4.initGLBuffers(agl);
+
+		palais5.pushTexture(sol4);
+		palais5.pushTexture(sol4_normal);
+		palais5.initGLBuffers(agl);
+
+		palais6.pushTexture(toit2);
+		palais6.pushTexture(toit2_normal);
+		palais6.initGLBuffers(agl);
+
+		// eau
+		eau.pushTexture(eau1_normal);
+		eau.initGLBuffers(agl);
+
+		weapon.setFaceColor("All",[0.5,0.1,0.1]);
+		weapon.initGLBuffers(agl);
+
+		bullets.setFaceColor("All",[0.1,0.3,1.0]);
+		bullets.initGLBuffers(agl);
+
+		tonneau.pushTexture(tonneau1);
+		tonneau.pushTexture(tonneau1_normal);
+		tonneau.initGLBuffers(agl);
+
+
+		// scene graph
+		// --------------------------------------------------------------------------------
+		sg.setRootElt(cam,sky,textProgId);
+
+		// ground -----------------------------------------------
+		var O3D_ground = new atomicGLSceneGraph('transform','ground');
+		O3D_ground.setTransform([0.0,0.0,0.0],[0,1,0],0);
+		sg.addChild(O3D_ground) ;
+		// road
+		var O3D_ground_road = new atomicGLSceneGraph('object3D','ground_road');
+		O3D_ground_road.setObject3D(ground_road,texPhongNormalMapProgId);
+		O3D_ground.addChild(O3D_ground_road);
+		// wall
+		var O3D_ground_wall = new atomicGLSceneGraph('object3D','ground_wall');
+		O3D_ground_wall.setObject3D(ground_wall,texPhongNormalMapProgId);
+		O3D_ground.addChild(O3D_ground_wall);
+		// sand
+		var O3D_ground_sand = new atomicGLSceneGraph('object3D','ground_sand');
+		O3D_ground_sand.setObject3D(ground_sand,texPhongNormalMapProgId);
+		O3D_ground.addChild(O3D_ground_sand);
+		// grass
+		var O3D_ground_grass = new atomicGLSceneGraph('object3D','ground_grass');
+		O3D_ground_grass.setObject3D(ground_grass,texPhongNormalMapProgId);
+		O3D_ground.addChild(O3D_ground_grass);
+
+		// donjon -----------------------------------------------------
+		var O3D_donjon1 =  new atomicGLSceneGraph('transform','donjon1');
+		O3D_donjon1.setTransform([-10.0,0.05,-40.0],[0,1,0],90.0);
+		sg.addChild(O3D_donjon1) ;
+		// base
+		var O3D_donjon_base = new atomicGLSceneGraph('object3D','donjon_base');
+		O3D_donjon_base.setObject3D(donjon1Base,texPhongNormalMapProgId);
+		O3D_donjon1.addChild(O3D_donjon_base);
+		// wood
+		var O3D_donjon_wood = new atomicGLSceneGraph('object3D','donjon_bois');
+		O3D_donjon_wood.setObject3D(donjon1Bois,texPhongNormalMapProgId);
+		O3D_donjon1.addChild(O3D_donjon_wood);
+		// window
+		var O3D_donjon_window = new atomicGLSceneGraph('object3D','donjon_fenetre');
+		O3D_donjon_window.setObject3D(donjon1Fenetre,texPhongNormalMapProgId);
+		O3D_donjon1.addChild(O3D_donjon_window);
+		// wall
+		var O3D_donjon_wall = new atomicGLSceneGraph('object3D','donjon_mur');
+		O3D_donjon_wall.setObject3D(donjon1Mur,texPhongNormalMapProgId);
+		O3D_donjon1.addChild(O3D_donjon_wall);
+		// ground
+		var O3D_donjon_ground = new atomicGLSceneGraph('object3D','donjon_sol');
+		O3D_donjon_ground.setObject3D(donjon1Sol,texPhongNormalMapProgId);
+		O3D_donjon1.addChild(O3D_donjon_ground);
+		// roof
+		var O3D_donjon_roof = new atomicGLSceneGraph('object3D','donjon_toiture');
+		O3D_donjon_roof.setObject3D(donjon1Toiture,texPhongNormalMapProgId);
+		O3D_donjon1.addChild(O3D_donjon_roof);
+
+		// donjon 2 ------------------------------------------------------
+		var O3D_donjon2 =  new atomicGLSceneGraph('transform','donjon2');
+		O3D_donjon2.setTransform([10.0,0.05,22.0],[0,1,0],-180.0);
+		sg.addChild(O3D_donjon2) ;
+		O3D_donjon2.addChild(O3D_donjon_base);
+		O3D_donjon2.addChild(O3D_donjon_wood);
+		O3D_donjon2.addChild(O3D_donjon_window);
+		O3D_donjon2.addChild(O3D_donjon_wall);
+		O3D_donjon2.addChild(O3D_donjon_ground);
+		O3D_donjon2.addChild(O3D_donjon_roof);
+
+		// donjon 3 ------------------------------------------------------
+		var O3D_donjon3 =  new atomicGLSceneGraph('transform','donjon3');
+		O3D_donjon3.setTransform([45.0,0.05,-112.0],[0,1,0],-90.0);
+		sg.addChild(O3D_donjon3) ;
+		O3D_donjon3.addChild(O3D_donjon_base);
+		O3D_donjon3.addChild(O3D_donjon_wood);
+		O3D_donjon3.addChild(O3D_donjon_window);
+		O3D_donjon3.addChild(O3D_donjon_wall);
+		O3D_donjon3.addChild(O3D_donjon_ground);
+		O3D_donjon3.addChild(O3D_donjon_roof);
+
+		// palais ----------------------------------------------------------
+		var O3D_palais =  new atomicGLSceneGraph('transform','palais');
+		O3D_palais.setTransform([-15.0,0.05,-70.0],[0,1,0],0.0);
+		sg.addChild(O3D_palais) ;
+		// palais part 1
+		var O3D_palais1 = new atomicGLSceneGraph('object3D','palais1');
+		O3D_palais1.setObject3D(palais1,texPhongNormalMapProgId);
+		O3D_palais.addChild(O3D_palais1);
+		// palais part 2
+		var O3D_palais2 = new atomicGLSceneGraph('object3D','palais2');
+		O3D_palais2.setObject3D(palais2,texPhongNormalMapProgId);
+		O3D_palais.addChild(O3D_palais2);
+		// palais part 3
+		var O3D_palais3 = new atomicGLSceneGraph('object3D','palais3');
+		O3D_palais3.setObject3D(palais3,texPhongNormalMapProgId);
+		O3D_palais.addChild(O3D_palais3);
+		// palais part 4
+		var O3D_palais4 = new atomicGLSceneGraph('object3D','palais4');
+		O3D_palais4.setObject3D(palais4,texPhongNormalMapProgId);
+		O3D_palais.addChild(O3D_palais4);
+		// palais part 5
+		var O3D_palais5 = new atomicGLSceneGraph('object3D','palais5');
+		O3D_palais5.setObject3D(palais5,texPhongNormalMapProgId);
+		O3D_palais.addChild(O3D_palais5);
+		// palais part 6
+		var O3D_palais6 = new atomicGLSceneGraph('object3D','palais6');
+		O3D_palais6.setObject3D(palais6,texPhongNormalMapProgId);
+		O3D_palais.addChild(O3D_palais6);
+
+		// house 1 -----------------------------------------------------
+		var O3D_house = new atomicGLSceneGraph('transform','house1');
+		O3D_house.setTransform([4.0,0.05,-80.0],[0,1,0],0.0);
+		sg.addChild(O3D_house) ;
+		// house1mur
+		var O3D_house1mur = new atomicGLSceneGraph('object3D','house1mur');
+		O3D_house1mur.setObject3D(house1mur,texPhongNormalMapProgId);
+		O3D_house.addChild(O3D_house1mur);
+		// house1sol
+		var O3D_house1sol = new atomicGLSceneGraph('object3D','house1sol');
+		O3D_house1sol.setObject3D(house1sol,texPhongNormalMapProgId);
+		O3D_house.addChild(O3D_house1sol);
+		// house1stone
+		var O3D_house1stone = new atomicGLSceneGraph('object3D','house1stone');
+		O3D_house1stone.setObject3D(house1stone,texPhongNormalMapProgId);
+		O3D_house.addChild(O3D_house1stone);
+		// house1stone2
+		var O3D_house1stone2 = new atomicGLSceneGraph('object3D','house1stone2');
+		O3D_house1stone2.setObject3D(house1stone2,texPhongNormalMapProgId);
+		O3D_house.addChild(O3D_house1stone2);
+		// house1toit
+		var O3D_house1toit = new atomicGLSceneGraph('object3D','house1toit');
+		O3D_house1toit.setObject3D(house1toit,texPhongNormalMapProgId);
+		O3D_house.addChild(O3D_house1toit);
+		// maison1wood
+		var O3D_maison1wood = new atomicGLSceneGraph('object3D','maison1wood');
+		O3D_maison1wood.setObject3D(maison1wood,texPhongNormalMapProgId);
+		O3D_house.addChild(O3D_maison1wood);
+
+		// house3 -----------------------------------------------------------
+		var O3D_house3 = new atomicGLSceneGraph('transform','house3');
+		O3D_house3.setTransform([15.0,0.05,-75],[0,1,0],-90.0);
+		sg.addChild(O3D_house3) ;
+		// house3mur
+		var O3D_house3mur = new atomicGLSceneGraph('object3D','house3mur');
+		O3D_house3mur.setObject3D(house3mur,texPhongNormalMapProgId);
+		O3D_house3.addChild(O3D_house3mur);
+		// house1roof
+		var O3D_house3roof = new atomicGLSceneGraph('object3D','house1roof');
+		O3D_house3roof.setObject3D(house3roof,texPhongNormalMapProgId);
+		O3D_house3.addChild(O3D_house3roof);
+		// house3wood
+		var O3D_house3wood = new atomicGLSceneGraph('object3D','house3wood');
+		O3D_house3wood.setObject3D(house3wood,texPhongNormalMapProgId);
+		O3D_house3.addChild(O3D_house3wood);
+
+		// bridge ---------------------------------------
+		var O3D_bridge = new atomicGLSceneGraph('transform','bridge');
+		O3D_bridge.setTransform([0.0,0.05,0.0],[0,1,0],0.0);
+		sg.addChild(O3D_bridge) ;
+		// bridge1stone
+		var O3D_bridge1stone = new atomicGLSceneGraph('object3D','bridge1stone');
+		O3D_bridge1stone.setObject3D(bridge1stone,texPhongNormalMapProgId);
+		O3D_bridge.addChild(O3D_bridge1stone);
+		// bridge1top
+		var O3D_bridge1top = new atomicGLSceneGraph('object3D','bridge1top');
+		O3D_bridge1top.setObject3D(bridge1top,texPhongNormalMapProgId);
+		O3D_bridge.addChild(O3D_bridge1top);
+
+		// rivière
+		var O3D_eau = new atomicGLSceneGraph('transform','eau');
+		O3D_eau.setTransform([0.0,-2.8,10.0],[0,1,0],90.0);
+		sg.addChild(O3D_eau) ;
+		// riviere1
+		var O3D_eau1 = new atomicGLSceneGraph('object3D','eau1');
+		O3D_eau1.setObject3D(eau,waterProgId);
+		O3D_eau.addChild(O3D_eau1);
+
+		// tower ------------------------------------------------------------
+		var O3D_tower = new atomicGLSceneGraph('transform','tower');
+		O3D_tower.setTransform([-10.0,0,-110],[0,1,0],0.0);
+		sg.addChild(O3D_tower) ;
+		// tower1base
+		var O3D_tower1base = new atomicGLSceneGraph('object3D','tower1base');
+		O3D_tower1base.setObject3D(tower1base,texPhongNormalMapProgId);
+		O3D_tower.addChild(O3D_tower1base);
+		// tower1mur
+		var O3D_tower1mur = new atomicGLSceneGraph('object3D','tower1mur');
+		O3D_tower1mur.setObject3D(tower1mur,texPhongNormalMapProgId);
+		O3D_tower.addChild(O3D_tower1mur);
+		// tower1parape
+		var O3D_tower1parape = new atomicGLSceneGraph('object3D','tower1parape');
+		O3D_tower1parape.setObject3D(tower1parape,texPhongNormalMapProgId);
+		O3D_tower.addChild(O3D_tower1parape);
+		// tower1sol
+		var O3D_tower1sol = new atomicGLSceneGraph('object3D','tower1sol');
+		O3D_tower1sol.setObject3D(tower1sol,texPhongNormalMapProgId);
+		O3D_tower.addChild(O3D_tower1sol);
+		// house1roof
+		var O3D_tower1toit = new atomicGLSceneGraph('object3D','tower1toit');
+		O3D_tower1toit.setObject3D(tower1toit,texPhongNormalMapProgId);
+		O3D_tower.addChild(O3D_tower1toit);
+
+		// tower2 ------------------------------------------------------------
+		var O3D_tower2 = new atomicGLSceneGraph('transform','tower2');
+		O3D_tower2.setTransform([15.0,0,0],[0,1,0],0.0);
+		O3D_tower.addChild(O3D_tower2) ;
+		O3D_tower2.addChild(O3D_tower1base);
+		O3D_tower2.addChild(O3D_tower1mur);
+		O3D_tower2.addChild(O3D_tower1parape);
+		O3D_tower2.addChild(O3D_tower1sol);
+		O3D_tower2.addChild(O3D_tower1toit);
+
+		// wall --------------------------------------------------------------
+		var O3D_wall = new atomicGLSceneGraph('transform','wall');
+		O3D_wall.setTransform([4.4,0,-1.0],[0,1,0],0.0);
+		O3D_tower2.addChild(O3D_wall) ;
+		// wall2base
+		var O3D_wall2base = new atomicGLSceneGraph('object3D','wall2base');
+		O3D_wall2base.setObject3D(wall2base,texPhongNormalMapProgId);
+		O3D_wall.addChild(O3D_wall2base);
+		// wall2stone
+		var O3D_wall2stone = new atomicGLSceneGraph('object3D','wall2stone');
+		O3D_wall2stone.setObject3D(wall2stone,texPhongNormalMapProgId);
+		O3D_wall.addChild(O3D_wall2stone);
+		// wall2wood
+		var O3D_wall2wood  = new atomicGLSceneGraph('object3D','wall2wood');
+		O3D_wall2wood.setObject3D(wall2wood,texPhongNormalMapProgId);
+		O3D_wall.addChild(O3D_wall2wood);
+		// wall2roof
+		var O3D_wall2roof = new atomicGLSceneGraph('object3D','wall2roof');
+		O3D_wall2roof.setObject3D(wall2roof,texPhongNormalMapProgId);
+		O3D_wall.addChild(O3D_wall2roof);
+
+		// wall 2 --------------------------------------------------------------
+		var O3D_wall2 = new atomicGLSceneGraph('transform','wall2');
+		O3D_wall2.setTransform([19.5,0,0.0],[0,1,0],0.0);
+		O3D_wall.addChild(O3D_wall2) ;
+		O3D_wall2.addChild(O3D_wall2base);
+		O3D_wall2.addChild(O3D_wall2stone);
+		O3D_wall2.addChild(O3D_wall2wood);
+		O3D_wall2.addChild(O3D_wall2roof);
+
+		var O3D_tonneau = new atomicGLSceneGraph('transform', 'tonneau');
+		O3D_tonneau.setTransform([3.0, 0.0, -50.0], [0, 1, 0], 0.0);
+		sg.addChild(O3D_tonneau) ;
+
+		// wall2roof
+		var O3D_tonneau1 = new atomicGLSceneGraph('object3D','tonneau1');
+		O3D_tonneau1.setObject3D(tonneau,texPhongNormalMapProgId);
+		O3D_tonneau.addChild(O3D_tonneau1);
+
+		// start the animation
+		nextFrame();
+	}
+
+	// draw
+	// -----------------------------
+	function sceneDraw(){
+		agl.initDraw();
+		sg.draw(agl,ams);
+
+		// push matrix
+		ams.mvPushMatrix();
+
+			// push matrix
+			ams.mvPushMatrix();
+
+			// position & orientation
+			ams.mvTranslate(0.5,-0.5,-2);
+			ams.mvRotate(100,[1,0,0]);
+			weapon.draw(agl,ams,diffProgId);
+
+			// pop matrix
+			ams.mvPopMatrix();
+
+		if(shoot)
+				{
+					if(nbBullet < nbBulletMax)
+					{
+						fire(nbBullet);
+						nbBullet++;
+					}
+					else
+					{
+						shoot = false;
+				}
+			}
+
+		// pop matrix
+		ams.mvPopMatrix();
+
+	}
+
+	// nextFrame
+	// -----------------------------
+    function nextFrame() {
+		handleKeys();
+        requestAnimFrame(nextFrame);
+        sceneDraw();
+        animate(nbBullet, nbBulletMax);
+    }
+
+    // animate
+    // ------------------------------
+    function animate(){
+    	// increase time
+    	sceneClock.tick() ;
+    	Yangle = Yangle + 0.01*sceneClock.get();
+			waterTime = waterTime + 0.005*sceneClock.get();
+    	waterProg.wTime = waterTime * 0.05;
+    }
+
+		// fire
+	// -----------------------------
+	function fire() {
+		// push matrix
+		ams.mvPushMatrix();
+
+		// position & orientation
+		ams.mvTranslate(0.55,-0.5+(nbBullet/3),-2.5-(nbBullet*2));
+		console.log('Affichage balle ' + nbBullet);
+		bullets.draw(agl,ams,diffProgId);
+
+		// pop matrix
+		ams.mvPopMatrix();
+	}
+
+		// keyboard
+		// --------------------------------
+		function handleKeyDown(event)
+		{
+			currentlyPressedKeys[event.keyCode] = true;
+			if (currentlyPressedKeys[67]) // (C) Knee
+			{
+				// debug
+				console.log('Knee ' + cam.yc);
+
+					cam.kneeDown();
+
+			}
+
+			if (currentlyPressedKeys[60]) // (<) speed up
+			{
+				// debug
+				console.log('"<" touch ');
+
+				cam.run();
+			}
+		}
+
+		function handleKeyUp(event)
+		{
+			if (currentlyPressedKeys[67]) // (C) Knee
+			{
+				// debug
+				console.log('KneeFUCKING ' + cam.yc);
+
+					cam.kneeUp();
+
+			}
+
+			if (currentlyPressedKeys[60]) // (<) walk
+			{
+				// debug
+				console.log('"<" release');
+
+				cam.walk();
+
+			}
+
+			currentlyPressedKeys[event.keyCode] = false;
+		}
+
+		function handleKeys() {
+
+			if (Math.abs(mouseX)>0.001)
+			{
+				cam.turnright(20*(mouseX*mouseX*mouseX));
+			}
+			cam.turnup(90*mouseY);
+
+			if (mouseDown) // (MOUSE CLIC) Fire
+			{
+				console.log('Tire');
+
+				shoot = true;
+				nbBullet = 0;
+				nbBulletMax = 30;
+			}
+
+			if (currentlyPressedKeys[68]) // (D) Right
+			{
+				// debug
+				//console.log('Right' + cam.xc);
+				cam.right();
+			}
+			if (currentlyPressedKeys[81]) // (Q) Left
+			{
+				// debug
+				//console.log('Left' + cam.xc);
+				cam.left();			//
+			}
+			if (currentlyPressedKeys[90]) // (Z) Up
+			{
+				// debug
+				//console.log('Up' + cam.zc);
+				cam.up();			//
+			}
+			if (currentlyPressedKeys[83]) // (S) Down
+			{
+				// debug
+				//console.log('Down' + cam.zc);
+				cam.down();			//
+			}
+			if (currentlyPressedKeys[32]) // (Space) Jump
+			{
+				setTimeout(function(){
+					 //do what you need here
+					cam.jump(2.5);
+				}, 20);
+
+				setTimeout(function(){
+					 //do what you need here
+					cam.jump(3.0);
+				}, 40);
+
+				setTimeout(function(){
+					 //do what you need here
+					cam.jump(3.5);
+				}, 70);
+
+				setTimeout(function(){
+					 //do what you need here
+					cam.jump(3.85);
+				}, 100);
+
+				setTimeout(function(){
+					 //do what you need here
+					cam.jump(3.95);
+				}, 115);
+
+				setTimeout(function(){
+					 //do what you need here
+					cam.jump(4.0);
+				}, 125);
+
+				setTimeout(function(){
+					 //do what you need here
+					cam.jump(3.95);
+				}, 135);
+
+				setTimeout(function(){
+					 //do what you need here
+					cam.jump(3.85);
+				}, 150);
+
+				setTimeout(function(){
+					 //do what you need here
+					cam.jump(3.5);
+				}, 180);
+
+				setTimeout(function(){
+					 //do what you need here
+					cam.jump(3.0);
+				}, 210);
+
+				setTimeout(function(){
+					 //do what you need here
+					cam.jump(2.5);
+				}, 230);
+
+				setTimeout(function(){
+					 //do what you need here
+					cam.jump(2.0);
+				}, 250);
+			}
+		}
+
+		// mouse
+		// ------------------------------
+		function onDocumentMouseMove( event ) {
+			omouseX = mouseX ;
+			mouseX = ( event.clientX - windowHalfX ) / windowHalfX;
+			mouseY = ( event.clientY - windowHalfY ) / windowHalfY;
+		}
+
+		function handleMouseDown(event)
+		{
+				mouseDown = true;
+				//lastMouseX = event.clientX;
+				//lastMouseY = event.clientY;
+		}
+
+		function handleMouseUp(event)
+		{
+			mouseDown = false;
+		}
+
+</script>
+</head>
+
+<body onload="webGLStart();">
+	<br>
+    <canvas id="oglcanvas" style="border: none;" width="1600" height="900"></canvas>
+	<br>
+</body></html>
